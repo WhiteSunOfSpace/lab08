@@ -20,3 +20,8 @@ jobs:
     run: docker run -v "$(pwd)/logs/:/home/logs/" logger
   - name: Put cf
     run: echo "1\n2\n3"
+
+  - name: Put logs
+    run: docker run -v "$(pwd)/logs/:/home/logs/" logger
+  - name: Put cf
+    run: echo "1\n4\n3"
