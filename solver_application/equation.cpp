@@ -6,10 +6,10 @@
 int main()
 {
     float a = 1;
-    float b = 4;
-    float c = 3;
+    float b = 3;
+    float c = 2;
 
-    //std::cin >> a >> b >> c;
+    std::cin >> a >> b >> c;
 
     float x1 = 0;
     float x2 = 0;
