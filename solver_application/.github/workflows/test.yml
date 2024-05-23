@@ -1,0 +1,17 @@
+name: testDocker
+
+on:
+ push:
+  branches: [master]
+
+
+jobs: 
+ build_Linux:
+
+  runs-on: ubuntu-latest
+
+  steps:
+  - uses: actions/checkout@v4
+
+  - name: Build the Docker
+    run: docker build -t logger .
