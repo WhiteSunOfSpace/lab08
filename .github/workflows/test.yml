@@ -17,6 +17,6 @@ jobs:
     run: docker build -t logger .
 
   - name: Put logs
-    run: docker run -it -v "$(pwd)/logs/:/home/logs/" logger
+    run: docker run -v "$(pwd)/logs/:/home/logs/" logger
   - name: Put cf
     run: echo "1\n2\n3"
