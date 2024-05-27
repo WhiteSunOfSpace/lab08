@@ -1,126 +1,167 @@
-# Лабораторная работа 06
+## Laboratory work VIII
 
-## Добавление файла CPack.cmake
-```bash
-name: CPack
+Данная лабораторная работа посвещена изучению систем автоматизации развёртывания и управления приложениями на примере **Docker**
 
-on:
- push:
-   tags:
-     - v**
-
-jobs: 
-
-  build_packages_Linux:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Configure Solver
-      run: cmake ${{github.workspace}} -B ${{github.workspace}}/build -D PRINT_VERSION=${GITHUB_REF_NAME#v}
-
-    - name: Build Solver
-      run: cmake --build ${{github.workspace}}/build
-
-    - name: Build package
-      run: cmake --build ${{github.workspace}}/build --target package
-
-    - name: Build source package
-      run: cmake --build ${{github.workspace}}/build --target package_source
-
-    - name: Make a release
-      uses: ncipollo/release-action@v1.10.0
-      with:
-        artifacts: "build/*.deb,build/*.tar.gz,build/*.zip"
-        token: ${{ secrets.GITHUB_TOKEN }}
+```sh
+$ open https://docs.docker.com/get-started/
 ```
 
-## Изменения в файлах CMakeLists.txt и actions.yml
+## Tasks
 
-### CMakeLists.txt
-```bash
-cmake_minimum_required(VERSION 3.22)
+- [ ] 1. Создать публичный репозиторий с названием **lab08** на сервисе **GitHub**
+- [ ] 2. Ознакомиться со ссылками учебного материала
+- [ ] 3. Выполнить инструкцию учебного материала
+- [ ] 4. Составить отчет и отправить ссылку личным сообщением в **Slack**
 
-project(solver)
+## Tutorial
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/formatter_ex_lib formatter_ex_lib_dir)
-
-add_library(solver_lib ${CMAKE_CURRENT_SOURCE_DIR}/solver_lib/solver.cpp)
-add_executable(solver ${CMAKE_CURRENT_SOURCE_DIR}/solver_application/equation.cpp)
-
-target_include_directories(formatter_ex_lib PUBLIC
-${CMAKE_CURRENT_SOURCE_DIR}/formatter_lib
-${CMAKE_CURRENT_SOURCE_DIR}/formatter_ex_lib
-${CMAKE_CURRENT_SOURCE_DIR}/solver_lib
-)
-
-target_link_libraries(solver formatter_ex_lib formatter_lib solver_lib)
-
-# Инструкции для инсталляции
-install(TARGETS solver
-    RUNTIME DESTINATION bin
-)
-
-include(CPack.cmake)
+```sh
+$ export GITHUB_USERNAME=<имя_пользователя>
 ```
 
-### actions.yml
-```bash
-name: CPack
-
-on:
- push:
-  branches: [master]
- pull_request:
-  branches: [master]
-
-jobs: 
- build_Linux:
-
-  runs-on: ubuntu-latest
-
-  steps:
-  - uses: actions/checkout@v4
-
-  - name: Configure Solver
-    run: cmake ${{github.workspace}} -B ${{github.workspace}}/build
-
-  - name: Build Solver
-    run: cmake --build ${{github.workspace}}/build
+```
+$ cd ${GITHUB_USERNAME}/workspace
+$ pushd .
+$ source scripts/activate
 ```
 
-## Добавление файла Cpack.yml
-```bash
-include(InstallRequiredSystemLibraries)
+```sh
+$ git clone https://github.com/${GITHUB_USERNAME}/lab07 lab08
+$ cd lab08
+$ git submodule update --init
+$ git remote remove origin
+$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab08
+```
 
-set(CPACK_PACKAGE_VERSION ${PRINT_VERSION})
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "C++ app for solving quadratic equations")
-set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
-set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
+```sh
+$ cat > Dockerfile <<EOF
+FROM ubuntu:18.04
+EOF
+```
 
-set(CPACK_SOURCE_IGNORE_FILES 
-"\\\\.cmake;/build/;/.git/;/.github/"
-)
+```sh
+$ cat >> Dockerfile <<EOF
 
-set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR}; /")
+RUN apt update
+RUN apt install -yy gcc g++ cmake
+EOF
+```
 
-set(CPACK_SOURCE_GENERATOR "TGZ;ZIP")
+```sh
+$ cat >> Dockerfile <<EOF
 
-set(CPACK_DEBIAN_PACKAGE_NAME "solverapp-dev")
-set(CPACK_DEBIAN_FILE_NAME "solver-${PRINT_VERSION}.deb")
-set(CPACK_DEBIAN_PACKAGE_VERSION ${PRINT_VERSION})
-set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "all")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "WhiteSunOfSpace")
-set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Solves quadratic equations")
-set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
+COPY . print/
+WORKDIR print
+EOF
+```
 
-set(CPACK_GENERATOR "DEB")
+```sh
+$ cat >> Dockerfile <<EOF
 
-include(CPack)
+RUN cmake -H. -B_build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=_install
+RUN cmake --build _build
+RUN cmake --build _build --target install
+EOF
+```
+
+```sh
+$ cat >> Dockerfile <<EOF
+
+ENV LOG_PATH /home/logs/log.txt
+EOF
+```
+
+```sh
+$ cat >> Dockerfile <<EOF
+
+VOLUME /home/logs
+EOF
+```
+
+```sh
+$ cat >> Dockerfile <<EOF
+
+WORKDIR _install/bin
+EOF
+```
+
+```sh
+$ cat >> Dockerfile <<EOF
+
+ENTRYPOINT ./demo
+EOF
+```
+
+```sh
+$ docker build -t logger .
+```
+
+```sh
+$ docker images
+```
+
+```sh
+$ mkdir logs
+$ docker run -it -v "$(pwd)/logs/:/home/logs/" logger
+text1
+text2
+text3
+<C-D>
+```
+
+```sh
+$ docker inspect logger
+```
+
+```sh
+$ cat logs/log.txt
+```
+
+```sh
+$ gsed -i 's/lab07/lab08/g' README.md
+```
+
+```sh
+$ vim .travis.yml
+/lang<CR>o
+services:
+- docker<ESC>
+jVGdo
+script:
+- docker build -t logger .<ESC>
+:wq
+```
+
+```sh
+$ git add Dockerfile
+$ git add .travis.yml
+$ git commit -m"adding Dockerfile"
+$ git push origin master
+```
+
+```sh
+$ travis login --auto
+$ travis enable
+```
+
+## Report
+
+```sh
+$ popd
+$ export LAB_NUMBER=08
+$ git clone https://github.com/tp-labs/lab${LAB_NUMBER} tasks/lab${LAB_NUMBER}
+$ mkdir reports/lab${LAB_NUMBER}
+$ cp tasks/lab${LAB_NUMBER}/README.md reports/lab${LAB_NUMBER}/REPORT.md
+$ cd reports/lab${LAB_NUMBER}
+$ edit REPORT.md
+$ gist REPORT.md
+```
+
+## Links
+
+- [Book](https://www.dockerbook.com)
+- [Instructions](https://docs.docker.com/engine/reference/builder/)
+
+```
+Copyright (c) 2015-2021 The ISC Authors
 ```
